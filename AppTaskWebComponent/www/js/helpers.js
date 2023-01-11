@@ -73,4 +73,27 @@ const logout = () => {
     localStorage.clear();
 }
 
-export {login,registrate,userLogged,logout}
+const recoverPassword = async() => {
+    const userToRecover = JSON.stringify({
+            email: document.querySelector('div-register').getAttribute('emailtorecover'),
+            password: '+'
+    })
+    const request = {
+        method: 'POST',
+        headers: {
+            'accept': '*/*',
+            'Content-type': 'text/json',
+        },
+        body: userToRecover
+        
+    }
+    try{
+        console.log(request);
+        await fetch('http://www.tasklisthnlopez.somee.com/api/Auth/ForgetPassword', request)
+        .then(x=>console.log(x))
+    }catch(e){
+        console.log(e);
+    } 
+}
+
+export {login,registrate,userLogged,logout,recoverPassword}
