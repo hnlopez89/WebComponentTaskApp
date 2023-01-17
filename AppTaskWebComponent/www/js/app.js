@@ -3,35 +3,91 @@ export default class RegisterDiv extends HTMLElement {
     constructor(){
         super()
         this.shadow = this.attachShadow({mode: 'open'})
+        let style = `
+        <style>
+        .divPersonalInfo {
+            display: flex;
+            flex-direction: column;
+        }
+        .alert {
+            color: red;
+            font-weight: bold;
+            font-size:12px;
+        }
+        </stlye>
+        `
+        this.shadow.innerHTML = style
+    
 
     }
     static get observedAttributes(){
-        return ['name', 'email', 'password', 'showpassword','registrate','logged','resetpassword','emailtorecover']
+        return ['name',
+            'email',
+            'password',
+            'showpassword',
+            'registrate',
+            'logged',
+            'resetpassword',
+            'emailtorecover',
+            'passwordcheck',
+            'registrationsuccess']
     }
 
     attributeChangedCallback(att,oldv,newv){
-        console.log(att, "oldvalue: "+ oldv, "newvalue: " +newv);
+        console.log(att,
+"oldvalue: "+ oldv, "newvalue: " +newv);
         switch(att){
             case 'registrate':
                 if(newv ==='true'){
                     this.pRegister.innerText = '¿Ya estás registrado? Haz click aquí para iniciar sesión:'
+                    this.divPersonalInfo.append(this.labelPasswordCheck)
+                    this.divPersonalInfo.append(this.inputPasswordCheck)
                     this.divPersonalInfo.append(this.labelName)
                     this.divPersonalInfo.append(this.inputName)
                     this.divForm.append(this.registerButton)
                     this.divForm.removeChild(this.loginButton)
                     this.switchRegisterLoginButton.innerText = 'Iniciar sesión'
-                    this.divFormAndReset.removeChild(this.divReset)              
+                    this.divFormAndReset.removeChild(this.divReset)
+                    this.title2.innerText = 'Registrate'              
                 }
                 else{
                     this.switchRegisterLoginButton.innerText = 'Registrarme'              
                     this.pRegister.innerText = '¿Todavía no estás registrado? Hazlo aquí:'
+                    this.divPersonalInfo.removeChild(this.labelPasswordCheck)
+                    this.divPersonalInfo.removeChild(this.inputPasswordCheck)
                     this.divForm.append(this.loginButton)
                     this.divForm.removeChild(this.registerButton)
                     this.divPersonalInfo.removeChild(this.labelName)
                     this.divPersonalInfo.removeChild(this.inputName)
                     this.divFormAndReset.append(this.divReset)
+                    this.title2.innerText = 'Inicia sesión'
                 }            
                 break;
+                case 'email':
+                    const mailformat = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/
+                    if(!newv.match(mailformat)) {
+                        this.divPersonalInfo.append(this.pWrongEmail)
+                    } else if(newv.match(mailformat)) {
+                        this.divPersonalInfo.removeChild(this.pWrongEmail)
+                    }
+                    break;
+                case 'password':
+                    const passwordformat =/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/
+                    if(!newv.match(passwordformat) && this.getAttribute('registrate') === 'true') {
+                        this.divPersonalInfo.append(this.pWrongPassword)
+                    } else {
+                        this.divPersonalInfo.removeChild(this.pWrongPassword)
+                    }
+                    if(newv && this.getAttribute('passwordcheck')){
+                        if(newv === this.getAttribute('passwordcheck')){
+                            this.divPersonalInfo.removeChild(this.pWrongCheckPassword)
+                        }else {
+                            this.divPersonalInfo.append(this.pWrongCheckPassword)
+                        }
+                    }
+                    break;
+
+
             case 'logged':
                 if(newv === 'true'){
                     this.userLoggedLocal = userLogged();
@@ -50,14 +106,26 @@ export default class RegisterDiv extends HTMLElement {
             
                 }
                 break;
+            case 'passwordcheck':
+                if(newv !== this.getAttribute('password')){
+                    console.log("no coinciden");
+                    this.divPersonalInfo.append(this.pWrongCheckPassword)
+                } else {
+                    this.divPersonalInfo.removeChild(this.pWrongCheckPassword)
+                }
+                console.log(this.getAttribute('password'));
+                break;
             case 'showpassword':
                 if(newv === 'false'){
                     this.inputPassword.type = 'password';
+                    this.inputPasswordCheck.type = 'password';
                     this.visiblePasswordButton.innerText = 'mostrar password'; 
                 }else{
                     this.inputPassword.type = 'text';
+                    this.inputPasswordCheck.type = 'text';
                     this.visiblePasswordButton.innerText = 'ocultar password';
                 }
+
                 break;
             case 'resetpassword':
                 if(newv === 'true'){
@@ -77,6 +145,21 @@ export default class RegisterDiv extends HTMLElement {
                     this.buttonShowEmailToRecover.innerText= 'Recuperar contraseña'
                     this.pForgot.innerText = '¿Te has olvidado la contraseña?'
                 }
+            case 'registrationsuccess':
+                if(newv === 'true'){
+                    this.shadow.removeChild(this.divFormAndReset)
+                    this.shadow.removeChild(this.divSwitchLoginRegistrate)
+                    this.shadow.append(this.divSuccessRegistration)
+                } else {
+                    this.shadow.removeChild(this.divSuccessRegistration)
+                    this.shadow.append(this.divFormAndReset)
+                    this.shadow.append(this.divSwitchLoginRegistrate)
+                    this.setAttribute('registrate', false)
+                    this.setAttribute('name', '')
+                    this.setAttribute('email', '')
+                    this.setAttribute('password', '')
+                    this.setAttribute('passwordcheck', '')
+                }
         }
     }
     connectedCallback(){
@@ -85,15 +168,29 @@ export default class RegisterDiv extends HTMLElement {
         
         /*************** DIV INPUTS INFO *******************/
         this.divPersonalInfo = document.createElement('div')
+        this.divPersonalInfo.className = 'divPersonalInfo'
         this.labelName = document.createElement('label')
         this.labelEmail = document.createElement('label')
         this.labelPassword = document.createElement('label')
+        this.labelPasswordCheck = document.createElement('label')
         this.labelName.innerText = 'Nombre:';
         this.labelEmail.innerText = 'Email:';
         this.labelPassword.innerText = 'Password:';
+        this.labelPasswordCheck.innerText = 'Introduce de nuevo tu Password:';
         this.inputName = document.createElement('input')
         this.inputPassword = document.createElement('input')
+        this.inputPasswordCheck = document.createElement('input')
         this.inputPassword.type = 'password'
+        this.inputPasswordCheck.type = 'password'
+        this.pWrongEmail = document.createElement('p')
+        this.pWrongEmail.className = 'alert'
+        this.pWrongEmail.innerText = '*Dirección de email con formato erróneo'
+        this.pWrongPassword = document.createElement('p')
+        this.pWrongPassword.className = 'alert'
+        this.pWrongPassword.innerText = '*Minimum eight characters, at least one uppercase letter, one lowercase letter, one number and one special character:'
+        this.pWrongCheckPassword = document.createElement('p')
+        this.pWrongCheckPassword.className = 'alert'
+        this.pWrongCheckPassword.innerText = 'Passwords no coinciden'
         this.inputEmail = document.createElement('input')
         this.visiblePasswordButton = document.createElement('button');
         this.visiblePasswordButton.innerText = 'mostrar password'
@@ -102,6 +199,9 @@ export default class RegisterDiv extends HTMLElement {
         });
         this.inputPassword.addEventListener('change', (event ) => {
             this.setAttribute('password', event.target.value)
+        });
+        this.inputPasswordCheck.addEventListener('change', (event ) => {
+            this.setAttribute('passwordcheck', event.target.value)
         });
         this.inputEmail.addEventListener('change', (event ) => {
             this.setAttribute('email', event.target.value)
@@ -129,6 +229,21 @@ export default class RegisterDiv extends HTMLElement {
             }
         })
 
+        /**************** DIV SUCCESS REGISTRATION ********/
+        this.divSuccessRegistration = document.createElement('div');
+        this.h1SuccessRegistration = document.createElement('h1');
+        this.pSuccessRegistration = document.createElement('p');
+        this.buttonSuccessRegistration = document.createElement('button');
+        this.h1SuccessRegistration.innerText = 'Usuario registrado correctamente';
+        this.pSuccessRegistration.innerText = 'Se ha enviado un correo electrónico para activar tu cuenta. Por favor, revisa tu correo y activa tu cuenta mediante el enlace que te hemos enviado.'
+        this.buttonSuccessRegistration.innerText = 'Entendido'
+        this.buttonSuccessRegistration.addEventListener('click',()=> {
+            this.setAttribute('registrationsuccess', false);
+        })
+        this.divSuccessRegistration.append(this.h1SuccessRegistration)
+        this.divSuccessRegistration.append(this.pSuccessRegistration)
+        this.divSuccessRegistration.append(this.buttonSuccessRegistration)
+
         /*************** DIV LOGGED IN *******************/
         this.divRegistered = document.createElement('div')
         this.buttonLogout = document.createElement('button');
@@ -144,13 +259,25 @@ export default class RegisterDiv extends HTMLElement {
         this.loginButton = document.createElement('button');
         this.loginButton.innerText = 'Login'
         this.loginButton.addEventListener('click',()=>{
+            const x = login();
+            x.then(e=>console.log(e));
             this.shadow.removeChild(this.divFormAndReset);
             this.shadow.removeChild(this.divSwitchLoginRegistrate);
-            login();
         })
         this.registerButton = document.createElement('button');
         this.registerButton.innerText = 'registrar usuario'
-        this.registerButton.addEventListener('click', registrate)
+        this.registerButton.addEventListener('click', async()=> {
+            try{
+                
+                const x = await registrate()
+                console.log(x.status);
+                if(x.status === 200){
+                    this.setAttribute('registrationsuccess', true)
+                }
+            } catch(e){
+                console.log(e.Error);
+            }
+        })
         this.divForm.append(this.divPersonalInfo)
         this.divForm.append(this.loginButton)
         //this.divForm.append(this.registerButton)

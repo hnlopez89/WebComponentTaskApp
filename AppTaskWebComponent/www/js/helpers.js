@@ -13,15 +13,17 @@ const registrate = async(name, email, password) =>{
             },
             body: newuser
         }
-        await fetch('http://www.tasklisthnlopez.somee.com/api/Auth/register', request)
+        console.log(newuser);
+        const response = await fetch('http://www.tasklisthnlopez.somee.com/api/Auth/register', request)
+        return response
     } catch(e){
-        console.log(e);
+        return e
     }
 }
 
 const login = async() =>{
-    try{
-        
+
+    try{        
         const loginUser = JSON.stringify({
             email: document.querySelector('div-register').getAttribute('email'),
             password: document.querySelector('div-register').getAttribute('password')
@@ -35,14 +37,21 @@ const login = async() =>{
             body: loginUser
         }
         await fetch('http://www.tasklisthnlopez.somee.com/api/Auth/login', request)
-        .then(response=>response.text())
+        .then(response=>{
+            if(response.status === 500){
+                throw new Error('error en logIn')
+            }
+            else if(response.status === 401){
+                throw new Error('Unauthorized')
+            }
+            response.text()})
         .then((data)=> {
             console.log(data)
             localStorage.setItem('token', data)
             document.querySelector('div-register').setAttribute('logged', 'true')
         })
     } catch(e){
-        console.log(e);
+        return e.message
     }
 }
 

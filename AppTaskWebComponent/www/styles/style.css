@@ -1,0 +1,8 @@
+div-register{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 300px;
+    margin: 20px auto;
+}
+
